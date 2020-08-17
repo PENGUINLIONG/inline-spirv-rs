@@ -1,0 +1,13 @@
+[package]
+name = "inline-spirv"
+version = "0.1.0"
+authors = ["PENGUINLIONG <admin@penguinliong.moe>"]
+edition = "2018"
+
+[dependencies]
+shaderc = { version = "0.6.2", features = [ "build-from-source" ] }
+syn = "1.0.38"
+quote = "1.0.7"
+
+[lib]
+proc-macro = true
