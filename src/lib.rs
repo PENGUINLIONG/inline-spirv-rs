@@ -1,3 +1,71 @@
+//! # inline-spirv
+//!
+//!
+//! The first string is always your shader path or the source code, depending on
+//! the macro you use. Other following parameters give you finer control over
+//! the compilation process:
+//!
+//! `inline-spirv` currently support two source languages:
+//!
+//! - `glsl`: The shader source is in GLSL;
+//! - `hlsl`: The shader source is in HLSL.
+//!
+//! And the following shader stages:
+//!
+//! - `vert`: Vertex shader;
+//! - `tesc`: Tessellation control shader (Hull shader);
+//! - `tese`: Tessellation evaluation shader (Domain shader);
+//! - `geom`: Geometry shader;
+//! - `frag`: Fragment shader (Pixel shader);
+//! - `comp`: Compute shader.
+//!
+//! You can also specify the entry function name (`main` by default):
+//!
+//! ```ignore
+//! include_spirv!("path/to/shader.hlsl", hlsl, vert, entry="very_main");
+//! ```
+//!
+//! If you are just off your work being tooooo tired to specify the descriptor
+//! binding points yourself, you can switch on `auto_bind`:
+//!
+//! ```ignore
+//! inline_spirv!(r#"
+//!     #version 450 core
+//!     uniform sampler2D limap;
+//!     uniform sampler2D emit_map;
+//!     void main() {}
+//! "#, glsl, frag, auto_bind);
+//! ```
+//!
+//! To decide how much you want the SPIR-V to be optimized:
+//!
+//! - `min_size`: Optimize for the minimal output size;
+//! - `max_perf`: Optimize for the best performance;
+//! - `no_debug`: Strip off all the debug information (don't do this if you want
+//! to reflect the SPIR-V and get variable names).
+//!
+//! You can use `#include "x.h"` to include a file relative to the shader source
+//! file (you cannot use this in inline source); or you can use `#include <x.h>`
+//! to include a file relative to any of your provided include directories
+//! (searched in order). To specify a include directory:
+//!
+//! ```ignore
+//! include_spirv!("path/to/shader.glsl", vert,
+//!     I "path/to/shader-headers/",
+//!     I "path/to/also-shader-headers/");
+//! ```
+//! 
+//! You can also define macro substitutions:
+//! 
+//! ```ignore
+//! include_spirv!("path/to/shader.glsl", vert,
+//!     D USE_LIGHTMAP,
+//!     D LIGHTMAP_COUNT="2");
+//! ```
+//! 
+//! Of course once you started to use macro is basically means that you are
+//! getting so dynamic that this little crate might not be enough. Then it might
+//! be a good time to build your own shader compilation pipeline!
 extern crate proc_macro;
 use std::path::{Path, PathBuf};
 use shaderc::{ShaderKind, SourceLanguage, OptimizationLevel, CompileOptions,
@@ -24,7 +92,7 @@ impl Default for ShaderCompilationConfig {
             kind: ShaderKind::InferFromSource,
             incl_dirs: vec![get_base_dir()],
             defs: Vec::new(),
-            entry: String::new(),
+            entry: "main".to_owned(),
             optim_lv: OptimizationLevel::Zero,
             debug: true,
             auto_bind: false,
@@ -208,11 +276,15 @@ fn gen_token_stream(feedback: CompilationFeedback) -> TokenStream {
     }).into()
 }
 
+/// Compile inline shader source and embed the SPIR-V binary word sequence.
+/// Returns a `&'static [u32]`.
 #[proc_macro]
 pub fn inline_spirv(tokens: TokenStream) -> TokenStream {
     let InlineShaderSource(feedback) = parse_macro_input!(tokens as InlineShaderSource);
     gen_token_stream(feedback)
 }
+/// Compile external shader source and embed the SPIR-V binary word sequence.
+/// Returns a `&'static [u32]`.
 #[proc_macro]
 pub fn include_spirv(tokens: TokenStream) -> TokenStream {
     let IncludedShaderSource(feedback) = parse_macro_input!(tokens as IncludedShaderSource);
