@@ -1,18 +1,26 @@
-use inline_spirv::{inline_spirv, include_spirv};
+use inline_spirv::{inline_spirv, include_spirv as include_spirv_raw};
 use spirq::{SpirvBinary};
 use env_logger;
 use log::info;
 
+// Notice how you can make a more customized version of include macro, same for
+// the inline macro.
+macro_rules! include_spirv {
+    ($path:expr, $stage:ident) => {
+        include_spirv_raw!(
+            $path,
+            $stage, hlsl,
+            entry="vertex_shader",
+            D USE_COLOR,
+            D DESC_SET="7",
+            I "examples/demo",
+        )
+    }
+}
+
 fn main() {
     env_logger::init();
-    let vert: &[u32] = include_spirv!(
-        "examples/demo/assets/demo.hlsl",
-        vert, hlsl,
-        entry="vertex_shader",
-        D USE_COLOR,
-        D DESC_SET="7",
-        I "examples/demo",
-    );
+    let vert: &[u32] = include_spirv!("examples/demo/assets/demo.hlsl", vert);
     let frag: &[u32] = inline_spirv!(r#"
         #version 450 core
         layout(constant_id = 233) const float hack_scale = 0;

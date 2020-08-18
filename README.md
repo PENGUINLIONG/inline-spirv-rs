@@ -28,6 +28,30 @@ let spv: &'static [u32] = include_spirv!("assets/vert.hlsl", vert, hlsl, entry="
 
 For the full list of options please refer to the [documentation](https://docs.rs/inline-spirv).
 
+## Tips
+
+The macro can be verbose especially you have a bunch of `#include`s, so please be aware of that you can alias and define a more customized macro for yourself:
+
+```rust
+use inline_spirv::include_spirv as include_spirv_raw;
+
+macro_rules! include_spirv {
+    ($path:expr, $stage:ident) => {
+        include_spirv_raw!(
+            $path,
+            $stage, hlsl,
+            entry="my_entry_pt",
+            D VERBOSE_DEFINITION,
+            D ANOTHER_VERBOSE_DEFINITION="verbose definition substitution",
+            I "long/path/to/include/directory",
+        )
+    }
+}
+
+// ...
+let vert: &[u32] = include_spirv!("examples/demo/assets/demo.hlsl", vert);
+```
+
 ## License
 
 This project is licensed under either of

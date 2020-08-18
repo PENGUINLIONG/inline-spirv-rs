@@ -74,6 +74,32 @@
 //! Of course once you started to use macro is basically means that you are
 //! getting so dynamic that this little crate might not be enough. Then it might
 //! be a good time to build your own shader compilation pipeline!
+//!
+//! ## Tips
+//!
+//! The macro can be verbose especially you have a bunch of `#include`s, so
+//! please be aware of that you can alias and define a more customized macro for
+//! yourself:
+//!
+//! ```ignore
+//! use inline_spirv::include_spirv as include_spirv_raw;
+//!
+//! macro_rules! include_spirv {
+//!     ($path:expr, $stage:ident) => {
+//!         include_spirv_raw!(
+//!             $path,
+//!             $stage, hlsl,
+//!             entry="my_entry_pt",
+//!             D VERBOSE_DEFINITION,
+//!             D ANOTHER_VERBOSE_DEFINITION="verbose definition substitution",
+//!             I "long/path/to/include/directory",
+//!         )
+//!     }
+//! }
+//!
+//! // ...
+//! let vert: &[u32] = include_spirv!("examples/demo/assets/demo.hlsl", vert);
+//! ```
 extern crate proc_macro;
 use std::path::{Path, PathBuf};
 use shaderc::{ShaderKind, SourceLanguage, OptimizationLevel, CompileOptions,
