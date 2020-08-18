@@ -17,7 +17,15 @@
 //! - `tese`: Tessellation evaluation shader (Domain shader);
 //! - `geom`: Geometry shader;
 //! - `frag`: Fragment shader (Pixel shader);
-//! - `comp`: Compute shader.
+//! - `comp`: Compute shader;
+//! - `mesh`: (Mesh shading) Mesh shader;
+//! - `task`: (Mesh shading) Task shader;
+//! - `rgen`: (Raytracing) ray-generation shader;
+//! - `rint`: (Raytracing) intersection shader;
+//! - `rahit`: (Raytracing) any-hit shader;
+//! - `rchit`: (Raytracing) closest-hit shader;
+//! - `rmiss`: (Raytracing) miss shader;
+//! - `rcall`: (Raytracing) callable shader;
 //!
 //! You can also specify the entry function name (`main` by default):
 //!
@@ -142,12 +150,20 @@ fn parse_compile_cfg(
                 cfg.optim_lv = OptimizationLevel::Performance;
             },
 
-            "vert" => cfg.kind = ShaderKind::Vertex,
-            "tesc" => cfg.kind = ShaderKind::TessControl,
-            "tese" => cfg.kind = ShaderKind::TessEvaluation,
-            "geom" => cfg.kind = ShaderKind::Geometry,
-            "frag" => cfg.kind = ShaderKind::Fragment,
-            "comp" => cfg.kind = ShaderKind::Compute,
+            "vert" => cfg.kind = ShaderKind::DefaultVertex,
+            "tesc" => cfg.kind = ShaderKind::DefaultTessControl,
+            "tese" => cfg.kind = ShaderKind::DefaultTessEvaluation,
+            "geom" => cfg.kind = ShaderKind::DefaultGeometry,
+            "frag" => cfg.kind = ShaderKind::DefaultFragment,
+            "comp" => cfg.kind = ShaderKind::DefaultCompute,
+            "mesh" => cfg.kind = ShaderKind::DefaultMesh,
+            "task" => cfg.kind = ShaderKind::DefaultTask,
+            "rgen" => cfg.kind = ShaderKind::DefaultRayGeneration,
+            "rint" => cfg.kind = ShaderKind::DefaultIntersection,
+            "rahit" => cfg.kind = ShaderKind::DefaultAnyHit,
+            "rchit" => cfg.kind = ShaderKind::DefaultClosestHit,
+            "rmiss" => cfg.kind = ShaderKind::DefaultMiss,
+            "rcall" => cfg.kind = ShaderKind::DefaultCallable,
 
             "I" => {
                 cfg.incl_dirs.push(PathBuf::from(parse_str(input)?))
