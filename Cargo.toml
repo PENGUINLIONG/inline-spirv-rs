@@ -18,7 +18,7 @@ proc-macro = true
 build-from-source = ["shaderc/build-from-source"]
 
 [dependencies]
-shaderc = "0.6.2"
+shaderc = "0.7.0"
 syn = "1.0.38"
 quote = "1.0.7"
 
