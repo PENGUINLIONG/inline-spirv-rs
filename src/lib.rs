@@ -70,7 +70,13 @@
 //!     D USE_LIGHTMAP,
 //!     D LIGHTMAP_COUNT="2");
 //! ```
-//! 
+//!
+//! You can request a specific version of target environment (only Vulkan is supported
+//! for now):
+//! - `vulkan1_0` for Vulkan 1.0 (default, supports SPIR-V 1.0);
+//! - `vulkan1_1` for Vulkan 1.1 (supports SPIR-V 1.3);
+//! - `vulkan1_2` for Vulkan 1.2 (supports SPIR-V 1.5).
+//!
 //! Of course once you started to use macro is basically means that you are
 //! getting so dynamic that this little crate might not be enough. Then it might
 //! be a good time to build your own shader compilation pipeline!
@@ -103,7 +109,7 @@
 extern crate proc_macro;
 use std::path::{Path, PathBuf};
 use shaderc::{ShaderKind, SourceLanguage, OptimizationLevel, CompileOptions,
-    TargetEnv, Compiler};
+    TargetEnv, Compiler, EnvVersion};
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::parse::{Parse, ParseStream, Result as ParseResult, Error as ParseError};
@@ -115,6 +121,7 @@ struct ShaderCompilationConfig {
     incl_dirs: Vec<PathBuf>,
     defs: Vec<(String, Option<String>)>,
     entry: String,
+    vulkan_version: EnvVersion,
     optim_lv: OptimizationLevel,
     debug: bool,
     auto_bind: bool,
@@ -127,6 +134,7 @@ impl Default for ShaderCompilationConfig {
             incl_dirs: vec![get_base_dir()],
             defs: Vec::new(),
             entry: "main".to_owned(),
+            vulkan_version: EnvVersion::Vulkan1_0,
             optim_lv: OptimizationLevel::Zero,
             debug: true,
             auto_bind: false,
@@ -214,6 +222,10 @@ fn parse_compile_cfg(
             "no_debug" => cfg.debug = false,
             "auto_bind" => cfg.auto_bind = true,
 
+            "vulkan1_0" => cfg.vulkan_version = EnvVersion::Vulkan1_0,
+            "vulkan1_1" => cfg.vulkan_version = EnvVersion::Vulkan1_1,
+            "vulkan1_2" => cfg.vulkan_version = EnvVersion::Vulkan1_2,
+
             _ => return Err(Error::new(k.span(), "unsupported compilation parameter")),
         }
     }
@@ -230,7 +242,7 @@ fn compile(
 
     let mut opt = CompileOptions::new()
         .ok_or("cannot create `shaderc::CompileOptions`")?;
-    opt.set_target_env(TargetEnv::Vulkan, 0);
+    opt.set_target_env(TargetEnv::Vulkan, cfg.vulkan_version as u32);
     opt.set_source_language(cfg.lang);
     opt.set_auto_bind_uniforms(cfg.auto_bind);
     opt.set_optimization_level(cfg.optim_lv);
