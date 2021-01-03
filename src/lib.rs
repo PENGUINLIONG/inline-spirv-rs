@@ -71,11 +71,11 @@
 //!     D LIGHTMAP_COUNT="2");
 //! ```
 //!
-//! You can request a specific version of target environment (only Vulkan is supported
-//! for now):
+//! You can request a specific version of target environment:
 //! - `vulkan1_0` for Vulkan 1.0 (default, supports SPIR-V 1.0);
 //! - `vulkan1_1` for Vulkan 1.1 (supports SPIR-V 1.3);
 //! - `vulkan1_2` for Vulkan 1.2 (supports SPIR-V 1.5).
+//! - `opengl4_5` for OpenGL 4.5 core profile.
 //!
 //! Of course once you started to use macro is basically means that you are
 //! getting so dynamic that this little crate might not be enough. Then it might
@@ -122,6 +122,7 @@ struct ShaderCompilationConfig {
     defs: Vec<(String, Option<String>)>,
     entry: String,
     vulkan_version: EnvVersion,
+    target_env: TargetEnv,
     optim_lv: OptimizationLevel,
     debug: bool,
     auto_bind: bool,
@@ -135,6 +136,7 @@ impl Default for ShaderCompilationConfig {
             defs: Vec::new(),
             entry: "main".to_owned(),
             vulkan_version: EnvVersion::Vulkan1_0,
+            target_env: TargetEnv::Vulkan,
             optim_lv: OptimizationLevel::Zero,
             debug: true,
             auto_bind: false,
@@ -225,6 +227,10 @@ fn parse_compile_cfg(
             "vulkan1_0" => cfg.vulkan_version = EnvVersion::Vulkan1_0,
             "vulkan1_1" => cfg.vulkan_version = EnvVersion::Vulkan1_1,
             "vulkan1_2" => cfg.vulkan_version = EnvVersion::Vulkan1_2,
+            "opengl4_5" => {
+                cfg.vulkan_version = EnvVersion::OpenGL4_5;
+                cfg.target_env = TargetEnv::OpenGL;
+            },
 
             _ => return Err(Error::new(k.span(), "unsupported compilation parameter")),
         }
@@ -242,7 +248,7 @@ fn compile(
 
     let mut opt = CompileOptions::new()
         .ok_or("cannot create `shaderc::CompileOptions`")?;
-    opt.set_target_env(TargetEnv::Vulkan, cfg.vulkan_version as u32);
+    opt.set_target_env(cfg.target_env, cfg.vulkan_version as u32);
     opt.set_source_language(cfg.lang);
     opt.set_auto_bind_uniforms(cfg.auto_bind);
     opt.set_optimization_level(cfg.optim_lv);
