@@ -108,38 +108,84 @@
 //! ```
 extern crate proc_macro;
 use std::path::{Path, PathBuf};
+
+#[cfg(feature = "shaderc")]
 use shaderc::{ShaderKind, SourceLanguage, OptimizationLevel, CompileOptions,
     TargetEnv, Compiler, EnvVersion};
+
+#[cfg(feature = "naga")]
+use naga::{valid::{ValidationFlags, Validator, Capabilities}, front::wgsl, back::spv, back::spv::WriterFlags};
+
+#[cfg(not(any(feature = "shaderc", feature = "naga")))]
+compile_error!("at least one compiler feature must be specified");
+
+enum InputSourceLanguage {
+    #[cfg(feature = "shaderc")]
+    ShaderC(SourceLanguage),
+
+    #[cfg(feature = "naga")]
+    WGSL
+}
+
+impl Default for InputSourceLanguage {
+    #[cfg(feature = "shaderc")]
+    fn default() -> Self {
+        InputSourceLanguage::ShaderC(SourceLanguage::GLSL)
+    }
+    #[cfg(not(feature = "shaderc"))]
+    fn default() -> Self {
+        InputSourceLanguage::WGSL
+    }
+}
+
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::parse::{Parse, ParseStream, Result as ParseResult, Error as ParseError};
 use syn::{parse_macro_input, Ident, LitStr, Token};
 
 struct ShaderCompilationConfig {
-    lang: SourceLanguage,
+    lang: InputSourceLanguage,
+    #[cfg(feature = "shaderc")]
     kind: ShaderKind,
     incl_dirs: Vec<PathBuf>,
     defs: Vec<(String, Option<String>)>,
     entry: String,
+    #[cfg(feature = "shaderc")]
     vulkan_version: EnvVersion,
+    #[cfg(feature = "shaderc")]
     target_env: TargetEnv,
+    #[cfg(feature = "shaderc")]
     optim_lv: OptimizationLevel,
     debug: bool,
+    #[cfg(feature = "shaderc")]
     auto_bind: bool,
+    #[cfg(feature = "naga")]
+    capabilities: Capabilities,
+    #[cfg(feature = "naga")]
+    naga_spirv_version: (u8, u8),
 }
 impl Default for ShaderCompilationConfig {
     fn default() -> ShaderCompilationConfig {
         ShaderCompilationConfig {
-            lang: SourceLanguage::GLSL,
+            lang: Default::default(),
+            #[cfg(feature = "shaderc")]
             kind: ShaderKind::InferFromSource,
             incl_dirs: vec![get_base_dir()],
             defs: Vec::new(),
             entry: "main".to_owned(),
+            #[cfg(feature = "shaderc")]
             vulkan_version: EnvVersion::Vulkan1_0,
+            #[cfg(feature = "shaderc")]
             target_env: TargetEnv::Vulkan,
+            #[cfg(feature = "shaderc")]
             optim_lv: OptimizationLevel::Zero,
             debug: true,
+            #[cfg(feature = "shaderc")]
             auto_bind: false,
+            #[cfg(feature = "naga")]
+            capabilities: Default::default(),
+            #[cfg(feature = "naga")]
+            naga_spirv_version: (1, 0),
         }
     }
 }
@@ -178,27 +224,45 @@ fn parse_compile_cfg(
         input.parse::<Token![,]>()?;
         let k = if let Ok(k) = input.parse::<Ident>() { k } else { break };
         match &k.to_string() as &str {
-            "glsl" => cfg.lang = SourceLanguage::GLSL,
+            #[cfg(feature = "shaderc")]
+            "glsl" => cfg.lang = InputSourceLanguage::ShaderC(SourceLanguage::GLSL),
+            #[cfg(feature = "shaderc")]
             "hlsl" => {
-                cfg.lang = SourceLanguage::HLSL;
+                cfg.lang = InputSourceLanguage::ShaderC(SourceLanguage::HLSL);
                 // HLSL might be illegal if optimization is disabled. Not sure,
                 // `glslangValidator` said this.
                 cfg.optim_lv = OptimizationLevel::Performance;
             },
+            #[cfg(feature = "naga")]
+            "wgsl" => cfg.lang = InputSourceLanguage::WGSL,
 
+            #[cfg(feature = "shaderc")]
             "vert" => cfg.kind = ShaderKind::DefaultVertex,
+            #[cfg(feature = "shaderc")]
             "tesc" => cfg.kind = ShaderKind::DefaultTessControl,
+            #[cfg(feature = "shaderc")]
             "tese" => cfg.kind = ShaderKind::DefaultTessEvaluation,
+            #[cfg(feature = "shaderc")]
             "geom" => cfg.kind = ShaderKind::DefaultGeometry,
+            #[cfg(feature = "shaderc")]
             "frag" => cfg.kind = ShaderKind::DefaultFragment,
+            #[cfg(feature = "shaderc")]
             "comp" => cfg.kind = ShaderKind::DefaultCompute,
+            #[cfg(feature = "shaderc")]
             "mesh" => cfg.kind = ShaderKind::DefaultMesh,
+            #[cfg(feature = "shaderc")]
             "task" => cfg.kind = ShaderKind::DefaultTask,
+            #[cfg(feature = "shaderc")]
             "rgen" => cfg.kind = ShaderKind::DefaultRayGeneration,
+            #[cfg(feature = "shaderc")]
             "rint" => cfg.kind = ShaderKind::DefaultIntersection,
+            #[cfg(feature = "shaderc")]
             "rahit" => cfg.kind = ShaderKind::DefaultAnyHit,
+            #[cfg(feature = "shaderc")]
             "rchit" => cfg.kind = ShaderKind::DefaultClosestHit,
+            #[cfg(feature = "shaderc")]
             "rmiss" => cfg.kind = ShaderKind::DefaultMiss,
+            #[cfg(feature = "shaderc")]
             "rcall" => cfg.kind = ShaderKind::DefaultCallable,
 
             "I" => {
@@ -218,15 +282,34 @@ fn parse_compile_cfg(
                 }
             }
 
+            #[cfg(feature = "shaderc")]
             "min_size" => cfg.optim_lv = OptimizationLevel::Size,
+            #[cfg(feature = "shaderc")]
             "max_perf" => cfg.optim_lv = OptimizationLevel::Performance,
 
             "no_debug" => cfg.debug = false,
+            #[cfg(feature = "shaderc")]
             "auto_bind" => cfg.auto_bind = true,
 
-            "vulkan1_0" => cfg.vulkan_version = EnvVersion::Vulkan1_0,
-            "vulkan1_1" => cfg.vulkan_version = EnvVersion::Vulkan1_1,
-            "vulkan1_2" => cfg.vulkan_version = EnvVersion::Vulkan1_2,
+            "vulkan1_0" => {
+                #[cfg(feature = "shaderc")]
+                { cfg.vulkan_version = EnvVersion::Vulkan1_0; }
+                #[cfg(feature = "naga")]
+                { cfg.naga_spirv_version = (1, 0); }
+            },
+            "vulkan1_1" => {
+                #[cfg(feature = "shaderc")]
+                { cfg.vulkan_version = EnvVersion::Vulkan1_1; }
+                #[cfg(feature = "naga")]
+                { cfg.naga_spirv_version = (1, 1); }
+            },
+            "vulkan1_2" => {
+                #[cfg(feature = "shaderc")]
+                { cfg.vulkan_version = EnvVersion::Vulkan1_2; }
+                #[cfg(feature = "naga")]
+                { cfg.naga_spirv_version = (1, 2); }
+            },
+            #[cfg(feature = "shaderc")]
             "opengl4_5" => {
                 cfg.vulkan_version = EnvVersion::OpenGL4_5;
                 cfg.target_env = TargetEnv::OpenGL;
@@ -243,60 +326,104 @@ fn compile(
     path: Option<&str>,
     cfg: &ShaderCompilationConfig,
 ) -> Result<CompilationFeedback, String> {
-    use std::cell::RefCell;
-    let dep_paths = RefCell::new(Vec::new());
 
-    let mut opt = CompileOptions::new()
-        .ok_or("cannot create `shaderc::CompileOptions`")?;
-    opt.set_target_env(cfg.target_env, cfg.vulkan_version as u32);
-    opt.set_source_language(cfg.lang);
-    opt.set_auto_bind_uniforms(cfg.auto_bind);
-    opt.set_optimization_level(cfg.optim_lv);
-    opt.set_include_callback(|name, ty, src_path, _depth| {
-        use shaderc::{IncludeType, ResolvedInclude};
-        let path = match ty {
-            IncludeType::Relative => {
-                let cur_dir = Path::new(src_path).parent()
-                    .ok_or("the shader source is not living in a filesystem, but attempts to include a relative path")?;
-                cur_dir.join(name)
-            },
-            IncludeType::Standard => {
-                cfg.incl_dirs.iter()
-                    .find_map(|incl_dir| {
-                        let path = incl_dir.join(name);
-                        if path.exists() { Some(path) } else { None }
-                    })
-                    .ok_or(format!("cannot find \"{}\" in include directories", name))?
-            },
-        };
+    match cfg.lang {
+        #[cfg(feature = "shaderc")]
+        InputSourceLanguage::ShaderC(lang) => {
+            use std::cell::RefCell;
 
-        let path_lit = path.to_string_lossy().to_string();
-        let content = std::fs::read_to_string(path)
-            .map_err(|e| format!("cannot read from \"{}\": {}", path_lit, e.to_string()))?;
-        let incl = ResolvedInclude { resolved_name: path_lit, content };
-        Ok(incl)
-    });
-    for (k, v) in cfg.defs.iter() {
-        opt.add_macro_definition(&k, v.as_ref().map(|x| x.as_ref()));
-    }
-    if cfg.debug {
-        opt.set_generate_debug_info();
+            let dep_paths = RefCell::new(Vec::new());
+            let mut opt = CompileOptions::new()
+                .ok_or("cannot create `shaderc::CompileOptions`")?;
+            opt.set_target_env(cfg.target_env, cfg.vulkan_version as u32);
+            opt.set_source_language(lang);
+            opt.set_auto_bind_uniforms(cfg.auto_bind);
+            opt.set_optimization_level(cfg.optim_lv);
+            opt.set_include_callback(|name, ty, src_path, _depth| {
+                use shaderc::{IncludeType, ResolvedInclude};
+                let path = match ty {
+                    IncludeType::Relative => {
+                        let cur_dir = Path::new(src_path).parent()
+                            .ok_or("the shader source is not living in a filesystem, but attempts to include a relative path")?;
+                        cur_dir.join(name)
+                    },
+                    IncludeType::Standard => {
+                        cfg.incl_dirs.iter()
+                            .find_map(|incl_dir| {
+                                let path = incl_dir.join(name);
+                                if path.exists() { Some(path) } else { None }
+                            })
+                            .ok_or(format!("cannot find \"{}\" in include directories", name))?
+                    },
+                };
+
+                let path_lit = path.to_string_lossy().to_string();
+                let content = std::fs::read_to_string(path)
+                    .map_err(|e| format!("cannot read from \"{}\": {}", path_lit, e.to_string()))?;
+                let incl = ResolvedInclude { resolved_name: path_lit, content };
+                Ok(incl)
+            });
+            for (k, v) in cfg.defs.iter() {
+                opt.add_macro_definition(&k, v.as_ref().map(|x| x.as_ref()));
+            }
+            if cfg.debug {
+                opt.set_generate_debug_info();
+            }
+
+            let mut compiler = Compiler::new().unwrap();
+            let path = if let Some(path) = path {
+                dep_paths.borrow_mut().push(path.to_owned());
+                path
+            } else { "<inline>" };
+            let out = compiler
+                .compile_into_spirv(src, cfg.kind, &path, &cfg.entry, Some(&opt))
+                .map_err(|e| e.to_string())?;
+            if out.get_num_warnings() != 0 {
+                return Err(out.get_warning_messages());
+            }
+            let spv = out.as_binary().into();
+            let feedback = CompilationFeedback { spv, dep_paths: dep_paths.into_inner() };
+            Ok(feedback)
+        }
+
+        #[cfg(feature = "naga")]
+        InputSourceLanguage::WGSL => {
+            // silence the compiler warning about path not being used when only wgsl is enabled
+            let _ = path.is_some();
+
+            match wgsl::parse_str(&src) {
+                Ok(module) => {
+                    // Attempt to validate WGSL, error if invalid
+                    match Validator::new(ValidationFlags::all(), cfg.capabilities).validate(&module) {
+                        Ok(info) => {
+                            let mut options = spv::Options::default();
+                            if cfg.debug {
+                                options.flags.insert(WriterFlags::DEBUG);
+                            } else {
+                                options.flags.remove(WriterFlags::DEBUG);
+                            }
+                            options.lang_version = cfg.naga_spirv_version;
+
+                            match spv::write_vec(&module, &info, &options) {
+                                Ok(spv) => {
+                                    let feedback = CompilationFeedback { spv, dep_paths: Vec::new() };
+                                    Ok(feedback)
+                                }
+                                Err(e) => Err(format!("{:?}", e))
+                            }
+                        },
+                        Err(e) => Err(format!("{:?}", e))
+                    }
+                },
+                Err(e) => {
+                    e.emit_to_stderr(src);
+                    Err(format!("{:?}", e))
+                },
+            }
+        }
     }
 
-    let mut compiler = Compiler::new().unwrap();
-    let path = if let Some(path) = path {
-        dep_paths.borrow_mut().push(path.to_owned());
-        path
-    } else { "<inline>" };
-    let out = compiler
-        .compile_into_spirv(src, cfg.kind, &path, &cfg.entry, Some(&opt))
-        .map_err(|e| e.to_string())?;
-    if out.get_num_warnings() != 0 {
-        return Err(out.get_warning_messages());
-    }
-    let spv = out.as_binary().into();
-    let feedback = CompilationFeedback { spv, dep_paths: dep_paths.into_inner() };
-    Ok(feedback)
+
 }
 
 impl Parse for IncludedShaderSource {
