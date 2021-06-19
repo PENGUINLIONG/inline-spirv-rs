@@ -121,8 +121,9 @@ compile_error!("at least one compiler feature must be specified");
 
 enum InputSourceLanguage {
     #[cfg(feature = "shaderc")]
-    ShaderC(SourceLanguage),
-
+    GLSL,
+    #[cfg(feature = "shaderc")]
+    HLSL,
     #[cfg(feature = "naga")]
     WGSL
 }
@@ -130,7 +131,7 @@ enum InputSourceLanguage {
 impl Default for InputSourceLanguage {
     #[cfg(feature = "shaderc")]
     fn default() -> Self {
-        InputSourceLanguage::ShaderC(SourceLanguage::GLSL)
+        InputSourceLanguage::GLSL
     }
     #[cfg(not(feature = "shaderc"))]
     fn default() -> Self {
@@ -229,10 +230,10 @@ fn parse_compile_cfg(
         let k = if let Ok(k) = input.parse::<Ident>() { k } else { break };
         match &k.to_string() as &str {
             #[cfg(feature = "shaderc")]
-            "glsl" => cfg.lang = InputSourceLanguage::ShaderC(SourceLanguage::GLSL),
+            "glsl" => cfg.lang = InputSourceLanguage::GLSL,
             #[cfg(feature = "shaderc")]
             "hlsl" => {
-                cfg.lang = InputSourceLanguage::ShaderC(SourceLanguage::HLSL);
+                cfg.lang = InputSourceLanguage::HLSL;
                 // HLSL might be illegal if optimization is disabled. Not sure,
                 // `glslangValidator` said this.
                 cfg.optim_lv = OptimizationLevel::Performance;
@@ -305,13 +306,13 @@ fn parse_compile_cfg(
                 #[cfg(feature = "shaderc")]
                 { cfg.vulkan_version = EnvVersion::Vulkan1_1; }
                 #[cfg(feature = "naga")]
-                { cfg.naga_spirv_version = (1, 1); }
+                { cfg.naga_spirv_version = (1, 3); }
             },
             "vulkan1_2" => {
                 #[cfg(feature = "shaderc")]
                 { cfg.vulkan_version = EnvVersion::Vulkan1_2; }
                 #[cfg(feature = "naga")]
-                { cfg.naga_spirv_version = (1, 2); }
+                { cfg.naga_spirv_version = (1, 5); }
             },
             #[cfg(feature = "shaderc")]
             "opengl4_5" => {
@@ -336,8 +337,14 @@ fn compile(
 
     match cfg.lang {
         #[cfg(feature = "shaderc")]
-        InputSourceLanguage::ShaderC(lang) => {
+        InputSourceLanguage::GLSL | InputSourceLanguage::HLSL => {
             use std::cell::RefCell;
+
+            let lang = match cfg.lang {
+                InputSourceLanguage::GLSL => SourceLanguage::GLSL,
+                InputSourceLanguage::HLSL => SourceLanguage::HLSL,
+                _ => unreachable!()
+            };
 
             let dep_paths = RefCell::new(Vec::new());
             let mut opt = CompileOptions::new()
@@ -428,14 +435,11 @@ fn compile(
                     }
                 },
                 Err(e) => {
-                    e.emit_to_stderr(src);
-                    Err(format!("{:?}", e))
+                    Err(e.emit_to_string(src))
                 },
             }
         }
     }
-
-
 }
 
 impl Parse for IncludedShaderSource {
