@@ -163,6 +163,8 @@ struct ShaderCompilationConfig {
     capabilities: Capabilities,
     #[cfg(feature = "naga")]
     naga_spirv_version: (u8, u8),
+    #[cfg(feature = "naga")]
+    adjust_coordinate_space: bool,
 }
 impl Default for ShaderCompilationConfig {
     fn default() -> ShaderCompilationConfig {
@@ -186,6 +188,8 @@ impl Default for ShaderCompilationConfig {
             capabilities: Default::default(),
             #[cfg(feature = "naga")]
             naga_spirv_version: (1, 0),
+            #[cfg(feature = "naga")]
+            adjust_coordinate_space: true,
         }
     }
 }
@@ -315,6 +319,9 @@ fn parse_compile_cfg(
                 cfg.target_env = TargetEnv::OpenGL;
             },
 
+            #[cfg(feature = "naga")]
+            "no_y_flip" => cfg.adjust_coordinate_space = false,
+
             _ => return Err(Error::new(k.span(), "unsupported compilation parameter")),
         }
     }
@@ -401,6 +408,11 @@ fn compile(
                                 options.flags.insert(WriterFlags::DEBUG);
                             } else {
                                 options.flags.remove(WriterFlags::DEBUG);
+                            }
+                            if cfg.adjust_coordinate_space {
+                                options.flags.insert(WriterFlags::ADJUST_COORDINATE_SPACE);
+                            } else {
+                                options.flags.remove(WriterFlags::ADJUST_COORDINATE_SPACE);
                             }
                             options.lang_version = cfg.naga_spirv_version;
 
