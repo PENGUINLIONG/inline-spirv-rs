@@ -214,9 +214,8 @@ struct ShaderCompilationConfig {
     optim_lv: OptimizationLevel,
     debug: bool,
     kind: ShaderKind,
-    // Backend specific.
-    #[cfg(feature = "shaderc")]
     auto_bind: bool,
+    // Backend specific.
     #[cfg(feature = "naga")]
     y_flip: bool,
 }
@@ -232,9 +231,8 @@ impl Default for ShaderCompilationConfig {
             optim_lv: OptimizationLevel::None,
             debug: true,
             kind: ShaderKind::Unknown,
-
-            #[cfg(feature = "shaderc")]
             auto_bind: false,
+
             #[cfg(feature = "naga")]
             y_flip: true,
         }
@@ -342,7 +340,6 @@ fn parse_compile_cfg(
                 cfg.spv_ver = TargetSpirvVersion::Spirv1_0;
             }
 
-            #[cfg(feature = "shaderc")]
             "auto_bind" => cfg.auto_bind = true,
 
             #[cfg(feature = "naga")]
