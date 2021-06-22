@@ -18,8 +18,6 @@ macro_rules! include_spirv {
 }
 
 fn main() {
-    env_logger::init();
-
     #[cfg(feature = "shaderc")]
     let vert: &[u32] = include_spirv!("examples/demo/assets/demo.hlsl", vert);
 
