@@ -1,0 +1,59 @@
+vertex shader:
+vertex_shader {
+    push_const: Some(
+        pcBuf { view: mat4x4T<f32> },
+    ),
+    inputs: {
+        (loc=0, comp=0): vec3<f32>,
+        (loc=1, comp=0): vec3<f32>,
+        (loc=2, comp=0): vec2<f32>,
+        (loc=3, comp=0): vec4<f32>,
+    },
+    outputs: {
+        (loc=0, comp=0): vec4<f32>,
+    },
+    descriptors: {
+        (set=7, bind=2): 1x sampler2D<f32>,
+    },
+    spec_consts: {},
+}
+fragment shader:
+main {
+    push_const: None,
+    inputs: {
+        (loc=1, comp=0): vec2<f32>,
+    },
+    outputs: {
+        (loc=0, comp=0): vec4<f32>,
+    },
+    descriptors: {
+        (set=0, bind=0): 1x sampler2D<f32>,
+        (set=0, bind=1): 1x sampler2D<f32>,
+    },
+    spec_consts: {
+        233: f32,
+    },
+}
+wgsl shader:
+fs_main {
+    push_const: None,
+    inputs: {
+        (loc=0, comp=0): vec2<f32>,
+    },
+    outputs: {
+        (loc=0, comp=0): vec4<f32>,
+    },
+    descriptors: {
+        (set=0, bind=1): 1x texture2D<u32>,
+    },
+    spec_consts: {},
+}
+hello shader:
+vs_main {
+    push_const: None,
+    inputs: {},
+    outputs: {},
+    descriptors: {},
+    spec_consts: {},
+}
+sounds good

@@ -15,18 +15,17 @@ categories = ["graphics"]
 proc-macro = true
 
 [features]
-default = ["shaderc", "wgsl"]
+default = ["glsl", "hlsl"]
 build-from-source = ["shaderc", "shaderc/build-from-source"]
 wgsl = ["naga"]
+hlsl = ["shaderc"]
 glsl = ["shaderc"]
 
 [dependencies]
-shaderc = { version = "0.7.0", optional = true }
+shaderc = { version = "0.7.2", optional = true }
 naga = { version = "0.5.0", features = ["wgsl-in", "spv-out"], optional = true }
 syn = "1.0.38"
 quote = "1.0.7"
 
 [dev-dependencies]
 spirq = "0.4.13"
-log = "0.4.11"
-env_logger = "0.7.1"
