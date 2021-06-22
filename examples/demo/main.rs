@@ -1,7 +1,5 @@
 use inline_spirv::{inline_spirv, include_spirv as include_spirv_raw};
 use spirq::{SpirvBinary};
-use env_logger;
-use log::info;
 
 // Notice how you can make a more customized version of include macro, same for
 // the inline macro.
@@ -62,14 +60,14 @@ fn main() {
     "#, wgsl);
 
     #[cfg(feature = "shaderc")]
-    info!("vertex shader:\n{:#?}", vert.iter().copied().collect::<SpirvBinary>().reflect_vec().unwrap()[0]);
+    println!("vertex shader:\n{:#?}", vert.iter().copied().collect::<SpirvBinary>().reflect_vec().unwrap()[0]);
     #[cfg(feature = "shaderc")]
-    info!("fragment shader:\n{:#?}", frag.iter().copied().collect::<SpirvBinary>().reflect_vec().unwrap()[0]);
+    println!("fragment shader:\n{:#?}", frag.iter().copied().collect::<SpirvBinary>().reflect_vec().unwrap()[0]);
 
     #[cfg(feature = "naga")]
-    info!("wgsl shader:\n{:#?}", wgsl_shader.iter().copied().collect::<SpirvBinary>().reflect_vec().unwrap()[0]);
+    println!("wgsl shader:\n{:#?}", wgsl_shader.iter().copied().collect::<SpirvBinary>().reflect_vec().unwrap()[0]);
     #[cfg(feature = "naga")]
-    info!("hello shader:\n{:#?}", hello_triangle.iter().copied().collect::<SpirvBinary>().reflect_vec().unwrap()[0]);
+    println!("hello shader:\n{:#?}", hello_triangle.iter().copied().collect::<SpirvBinary>().reflect_vec().unwrap()[0]);
 
-    info!("sounds good");
+    println!("sounds good");
 }

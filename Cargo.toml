@@ -29,5 +29,3 @@ quote = "1.0.7"
 
 [dev-dependencies]
 spirq = "0.4.13"
-log = "0.4.11"
-env_logger = "0.7.1"
