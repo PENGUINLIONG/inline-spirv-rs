@@ -98,7 +98,7 @@ pub(crate) fn compile(
     }
 
     let dep_paths = RefCell::new(Vec::new());
-    let mut compiler = shaderc::Compiler::new().unwrap();
+    let compiler = shaderc::Compiler::new().unwrap();
     let path = if let Some(path) = path {
         dep_paths.borrow_mut().push(path.to_owned());
         path
