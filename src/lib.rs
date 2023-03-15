@@ -66,6 +66,18 @@
 //!     I "path/to/shader-headers/",
 //!     I "path/to/also-shader-headers/");
 //! ```
+//! 
+//! ## Include SPIR-V Binary
+//!
+//! You may also want to inline precompiled SPIR-V binaries if you already have
+//! your pipeline set up. To do so, you can use `include_spirv_bytes!`:
+//!
+//! ```ignore
+//! include_spirv!("path/to/shader.spv");
+//! ```
+//!
+//! Note that all compile arguments are ignored in this case, since there is no
+//! compilation.
 //!
 //! ## Compiler Definition
 //!
@@ -138,6 +150,7 @@
 //! let vert: &[u32] = include_spirv!("examples/demo/assets/demo.hlsl", vert);
 //! ```
 extern crate proc_macro;
+use std::convert::TryInto;
 use std::path::{Path, PathBuf};
 
 mod backends;
@@ -360,18 +373,57 @@ fn compile(
         .or_else(|_| backends::shaderc::compile(src, path, cfg))
 }
 
+fn build_spirv_binary(path: &Path) -> Option<Vec<u32>> {
+    use std::fs::File;
+    use std::io::Read;
+    let mut buf = Vec::new();
+    if let Ok(mut f) = File::open(&path) {
+        if buf.len() & 3 != 0 {
+            // Misaligned input.
+            return None;
+        }
+        f.read_to_end(&mut buf).ok()?;
+    }
+
+    let out = buf.chunks_exact(4)
+        .map(|x| x.try_into().unwrap())
+        .map(match buf[0] {
+            0x03 => u32::from_le_bytes,
+            0x07 => u32::from_be_bytes,
+            _ => return None,
+        })
+        .collect::<Vec<u32>>();
+
+    Some(out)
+}
+
 impl Parse for IncludedShaderSource {
     fn parse(mut input: ParseStream) -> ParseResult<Self> {
+        use std::ffi::OsStr;
         let path_lit = input.parse::<LitStr>()?;
         let path = Path::new(&get_base_dir())
-            .join(&path_lit.value())
-            .to_string_lossy()
-            .to_string();
-        let src = std::fs::read_to_string(&path)
-            .map_err(|e| syn::Error::new(path_lit.span(), e))?;
-        let cfg = parse_compile_cfg(&mut input)?;
-        let feedback = compile(&src, Some(&path), &cfg)
-            .map_err(|e| ParseError::new(input.span(), e))?;
+            .join(&path_lit.value());
+
+        if !path.exists() || !path.is_file() {
+            return Err(ParseError::new(path_lit.span(),
+                format!("{path} is not a valid source file", path=path_lit.value())));
+        }
+
+        let is_spirv = path.is_file() && path.extension() == Some(OsStr::new("spv"));
+        let feedback = if is_spirv {
+            let spv = build_spirv_binary(&path)
+                .ok_or_else(|| syn::Error::new(path_lit.span(), "invalid spirv"))?;
+            CompilationFeedback {
+                spv,
+                dep_paths: vec![],
+            }
+        } else {
+            let src = std::fs::read_to_string(&path)
+                .map_err(|e| syn::Error::new(path_lit.span(), e))?;
+            let cfg = parse_compile_cfg(&mut input)?;
+            compile(&src, Some(path.to_string_lossy().as_ref()), &cfg)
+                .map_err(|e| ParseError::new(input.span(), e))?
+        };
         let rv = IncludedShaderSource(feedback);
         Ok(rv)
     }

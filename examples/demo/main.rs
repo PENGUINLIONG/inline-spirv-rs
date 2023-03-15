@@ -39,6 +39,9 @@ fn main() {
         }
     "#, frag, auto_bind);
 
+    #[cfg(feature = "shaderc")]
+    let comp: &[u32] = include_spirv_raw!("examples/demo/assets/demo.comp.spv");
+
     #[cfg(feature = "naga")]
     let wgsl_shader: &[u32] = include_spirv_raw!("examples/demo/assets/shader.wgsl", wgsl);
 
@@ -58,9 +61,11 @@ fn main() {
     "#, wgsl);
 
     #[cfg(feature = "shaderc")]
-    println!("vertex shader:\n{:#?}", vert.iter().copied().collect::<SpirvBinary>().reflect_vec().unwrap()[0]);
+    println!("hlsl vertex shader:\n{:#?}", vert.iter().copied().collect::<SpirvBinary>().reflect_vec().unwrap()[0]);
     #[cfg(feature = "shaderc")]
-    println!("fragment shader:\n{:#?}", frag.iter().copied().collect::<SpirvBinary>().reflect_vec().unwrap()[0]);
+    println!("glsl fragment shader:\n{:#?}", frag.iter().copied().collect::<SpirvBinary>().reflect_vec().unwrap()[0]);
+    #[cfg(feature = "shaderc")]
+    println!("spirv compute shader:\n{:#?}", comp.iter().copied().collect::<SpirvBinary>().reflect_vec().unwrap()[0]);
 
     #[cfg(feature = "naga")]
     println!("wgsl shader:\n{:#?}", wgsl_shader.iter().copied().collect::<SpirvBinary>().reflect_vec().unwrap()[0]);
