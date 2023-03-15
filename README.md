@@ -26,6 +26,14 @@ use inline_spirv::include_spirv;
 let spv: &'static [u32] = include_spirv!("assets/vert.hlsl", vert, hlsl, entry="Main");
 ```
 
+To include a precompiled SPIR-V binary:
+
+```rust
+use inline_spirv::include_spirv;
+
+let spv: &'static [u32] = include_spirv!("assets/vert.spv");
+```
+
 For the full list of options please refer to the [documentation](https://docs.rs/inline-spirv).
 
 ## Tips
