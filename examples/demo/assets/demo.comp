@@ -1,0 +1,14 @@
+#version 460
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(binding=0) uniform _0 {
+    vec4 i;
+} u;
+layout(binding=1) writeonly buffer _1 {
+    vec4 o;
+} b;
+
+void main() {
+    b.o = u.i;
+}
