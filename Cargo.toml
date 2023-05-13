@@ -1,4 +1,6 @@
 [workspace]
 members = [
     "inline-spirv",
+    "jit-spirv",
+    "jit-spirv-impl",
 ]
