@@ -1,0 +1,31 @@
+[package]
+name = "inline-spirv"
+version = "0.1.6"
+authors = ["PENGUINLIONG <admin@penguinliong.moe>", "Daniel Parnell <me@danielparnell.com>"]
+edition = "2018"
+license = "MIT OR Apache-2.0"
+description = "Compile GLSL/HLSL/WGSL and inline SPIR-V right inside your crate."
+repository = "https://github.com/PENGUINLIONG/inline-spirv-rs"
+readme = "README.md"
+documentation = "https://docs.rs/inline-spirv-rs"
+homepage = "https://github.com/PENGUINLIONG/inline-spirv-rs"
+categories = ["graphics"]
+
+[lib]
+proc-macro = true
+
+[features]
+default = ["glsl", "hlsl"]
+build-from-source = ["shaderc", "shaderc/build-from-source"]
+wgsl = ["naga"]
+hlsl = ["shaderc"]
+glsl = ["shaderc"]
+
+[dependencies]
+shaderc = { version = ">=0.7.2, <=0.8", optional = true }
+naga = { version = "0.5.0", features = ["wgsl-in", "spv-out"], optional = true }
+syn = "1.0.38"
+quote = "1.0.7"
+
+[dev-dependencies]
+spirq = "0.4.13"
