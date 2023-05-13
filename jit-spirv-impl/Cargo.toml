@@ -1,0 +1,25 @@
+[package]
+name = "jit-spirv-impl"
+version = "0.1.0"
+authors = ["PENGUINLIONG <admin@penguinliong.moe>"]
+edition = "2018"
+license = "MIT OR Apache-2.0"
+description = "Compile GLSL/HLSL/WGSL to SPIR-V just-in-time with a simple macro."
+repository = "https://github.com/PENGUINLIONG/inline-spirv-rs"
+readme = "README.md"
+documentation = "https://docs.rs/inline-spirv-rs"
+homepage = "https://github.com/PENGUINLIONG/inline-spirv-rs"
+categories = ["graphics"]
+
+[lib]
+proc-macro = true
+
+[features]
+default = ["shaderc"]
+naga = []
+shaderc = []
+
+[dependencies]
+syn = "2.0.15"
+quote = "1.0.7"
+proc-macro2 = "1.0.24"

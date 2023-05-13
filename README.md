@@ -1,9 +1,9 @@
-# Inline SPIR-V
+# Inline SPIR-V & JIT SPIR-V
 
 [![Crate](https://img.shields.io/crates/v/inline-spirv)](https://crates.io/crates/inline-spirv)
 [![Documentation](https://docs.rs/inline-spirv/badge.svg)](https://docs.rs/inline-spirv)
 
-`inline-spirv` ease the way you write shaders. Although as game developers, we usually compile a permutation of shader stages for different objects and materials at runtime for the best flexibility; sometimes we *do* want to try out some new ideas and start up dirty. This crate helps you compile GLSL/HLSL shader in your Rust code, or in external files, into SPIR-V; and embed them right inside the binary, so you are freed from all the compilation hassle.
+`inline-spirv` and `jit-spirv` ease the way you write shaders. Although as game developers, we usually compile a permutation of shader stages for different objects and materials at runtime for the best flexibility; sometimes we *do* want to try out some new ideas and start up dirty. This crate helps you compile GLSL/HLSL shader in your Rust code, or in external files, into SPIR-V; and embed them right inside the binary, so you are freed from all the compilation hassle.
 
 ## How to Use
 
@@ -24,6 +24,21 @@ To include a external shader source file:
 use inline_spirv::include_spirv;
 
 let spv: &'static [u32] = include_spirv!("assets/vert.hlsl", vert, hlsl, entry="Main");
+```
+
+To compile a runtime shader source just-in-time:
+
+```rust
+use jit_spirv::{jit_spirv, CompilationFeedback};
+
+let feedback: CompilationFeedback = jit_spirv!(r#"
+    #version 450
+    layout(binding=0) writeonly buffer _0 { float data[]; };
+    void main() {
+        data[gl_GlobalInvocationID.x] = 1.0;
+    }
+"#, comp).unwrap();
+let spv: &[u32] = &feedback.spv;
 ```
 
 To include a precompiled SPIR-V binary:
