@@ -12,7 +12,7 @@ macro_rules! include_spirv {
             entry="vertex_shader",
             D USE_COLOR,
             D DESC_SET="7",
-            I "examples/demo",
+            I "inline-spirv/examples/demo",
         )
     }
 }
