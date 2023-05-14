@@ -10,7 +10,7 @@ use crate::{InputSourceLanguage, OptimizationLevel,
 pub(crate) fn generate_compile_code(
     src: &Expr,
     cfg: &ShaderCompilationConfig,
-) -> Result<proc_macro::TokenStream, String> {
+) -> Result<proc_macro2::TokenStream, String> {
     use proc_macro2::Span;
     use syn::LitStr;
 
@@ -103,7 +103,7 @@ pub(crate) fn generate_compile_code(
     };
 
     let generated_code = quote!({
-        (|| {
+        (|_: String| {
             let mut opt = ::jit_spirv::dep::shaderc::CompileOptions::new()
                 .ok_or("cannot create `shaderc::CompileOptions`")?;
             opt.set_target_env(#target_env, #vulkan_version as u32);
@@ -154,13 +154,13 @@ pub(crate) fn generate_compile_code(
                 return Err(out.get_warning_messages());
             }
             let spv = out.as_binary().into();
-            let feedback = jit_spirv::CompilationFeedback {
+            let feedback = ::jit_spirv::CompilationFeedback {
                 spv,
                 dep_paths: dep_paths.into_inner()
             };
             Ok(feedback)
-        })()
-    }).into();
+        })
+    });
     Ok(generated_code)
 }
 
@@ -168,6 +168,6 @@ pub(crate) fn generate_compile_code(
 pub(crate) fn generate_compile_code(
     _: &Expr,
     _: &ShaderCompilationConfig,
-) -> Result<proc_macro::TokenStream, String> {
+) -> Result<proc_macro2::TokenStream, String> {
     Err("shaderc backend is not enabled".to_owned())
 }

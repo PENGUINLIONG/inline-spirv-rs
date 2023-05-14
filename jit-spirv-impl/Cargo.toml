@@ -15,7 +15,7 @@ categories = ["graphics"]
 proc-macro = true
 
 [features]
-default = ["shaderc"]
+default = ["shaderc", "naga"]
 naga = []
 shaderc = []
 

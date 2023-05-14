@@ -310,8 +310,22 @@ fn generate_compile_code(
     src: &Expr,
     cfg: &ShaderCompilationConfig,
 ) -> Result<proc_macro::TokenStream, String> {
-    backends::naga::generate_compile_code(src, cfg)
-        .or_else(|_| backends::shaderc::generate_compile_code(src, cfg))
+    use quote::quote;
+    let mut is_valid = false;
+    // This defualt error should not be visible to the users.
+    let mut out = quote!(Err(String::default()));
+    if let Ok(generated_code) = backends::naga::generate_compile_code(src, cfg) {
+        out.extend(quote!(.or_else(#generated_code)));
+        is_valid = true;
+    }
+    if let Ok(generated_code) = backends::shaderc::generate_compile_code(src, cfg) {
+        out.extend(quote!(.or_else(#generated_code)));
+        is_valid = true;
+    }
+    if !is_valid {
+        return Err("cannot find a proper shader compiler backend".to_owned());
+    }
+    Ok(out.into())
 }
 
 impl Parse for JitSpirv {

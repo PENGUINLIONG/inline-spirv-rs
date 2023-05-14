@@ -12,7 +12,7 @@ homepage = "https://github.com/PENGUINLIONG/inline-spirv-rs"
 categories = ["graphics"]
 
 [features]
-default = ["glsl", "hlsl"]
+default = ["glsl", "hlsl", "wgsl"]
 build-from-source = ["shaderc", "shaderc/build-from-source"]
 wgsl = ["naga"]
 hlsl = ["shaderc"]
