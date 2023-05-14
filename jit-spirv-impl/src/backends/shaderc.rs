@@ -1,4 +1,4 @@
-use syn::Expr;
+use syn::Ident;
 use quote::quote;
 
 #[allow(unused_imports)]
@@ -8,7 +8,7 @@ use crate::{InputSourceLanguage, OptimizationLevel,
 
 #[cfg(feature = "shaderc")]
 pub(crate) fn generate_compile_code(
-    src: &Expr,
+    src: Ident,
     cfg: &ShaderCompilationConfig,
 ) -> Result<proc_macro2::TokenStream, String> {
     use proc_macro2::Span;
@@ -103,7 +103,7 @@ pub(crate) fn generate_compile_code(
     };
 
     let generated_code = quote!({
-        (|_: String| {
+        (|_: String| -> ::std::result::Result<::jit_spirv::CompilationFeedback, String> {
             let mut opt = ::jit_spirv::dep::shaderc::CompileOptions::new()
                 .ok_or("cannot create `shaderc::CompileOptions`")?;
             opt.set_target_env(#target_env, #vulkan_version as u32);

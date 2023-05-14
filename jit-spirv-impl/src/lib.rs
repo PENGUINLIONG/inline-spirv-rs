@@ -107,6 +107,7 @@ compile_error!("no compiler backend enabled; please specify at least one of \
     the following input source features: `glsl`, `hlsl`, `wgsl`");
 
 use proc_macro::TokenStream;
+use proc_macro2::Span;
 use syn::parse::{Parse, ParseStream, Result as ParseResult, Error as ParseError};
 use syn::{parse_macro_input, Ident, LitStr, Token, Expr};
 
@@ -314,17 +315,22 @@ fn generate_compile_code(
     let mut is_valid = false;
     // This defualt error should not be visible to the users.
     let mut out = quote!(Err(String::default()));
-    if let Ok(generated_code) = backends::naga::generate_compile_code(src, cfg) {
+    if let Ok(generated_code) = backends::naga::generate_compile_code(Ident::new("src", Span::call_site()), cfg) {
         out.extend(quote!(.or_else(#generated_code)));
         is_valid = true;
     }
-    if let Ok(generated_code) = backends::shaderc::generate_compile_code(src, cfg) {
+    if let Ok(generated_code) = backends::shaderc::generate_compile_code(Ident::new("src", Span::call_site()), cfg) {
         out.extend(quote!(.or_else(#generated_code)));
         is_valid = true;
     }
     if !is_valid {
         return Err("cannot find a proper shader compiler backend".to_owned());
     }
+    let out = quote!({
+        let src: &str = #src.as_ref();
+        let feedback = #out;
+        feedback.map(|x| x.spv)
+    });
     Ok(out.into())
 }
 

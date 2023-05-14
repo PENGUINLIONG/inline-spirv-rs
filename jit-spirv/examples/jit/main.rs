@@ -27,7 +27,7 @@ fn main() {
         D HACK_SCALE_CONSTANT_ID="233",
     ).unwrap();
 
-    let entry_points = ReflectConfig::new().spv(frag.spv).reflect().unwrap();
+    let entry_points = ReflectConfig::new().spv(frag).reflect().unwrap();
     let entry = entry_points.first().unwrap();
 
     println!("{:#?}", entry);
