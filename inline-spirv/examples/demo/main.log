@@ -1,59 +1,370 @@
-vertex shader:
+hlsl vertex shader:
 vertex_shader {
-    push_const: Some(
-        pcBuf { view: mat4x4T<f32> },
-    ),
-    inputs: {
-        (loc=0, comp=0): vec3<f32>,
-        (loc=1, comp=0): vec3<f32>,
-        (loc=2, comp=0): vec2<f32>,
-        (loc=3, comp=0): vec4<f32>,
-    },
-    outputs: {
-        (loc=0, comp=0): vec4<f32>,
-    },
-    descriptors: {
-        (set=7, bind=2): 1x sampler2D<f32>,
-    },
-    spec_consts: {},
+    exec_model: Vertex,
+    name: "vertex_shader",
+    vars: [
+        Descriptor {
+            name: Some(
+                "tex",
+            ),
+            desc_bind: (set=7, bind=2),
+            desc_ty: SampledImage,
+            ty: SampledImage(
+                SampledImageType {
+                    scalar_ty: Float {
+                        bits: 32,
+                    },
+                    dim: Dim2D,
+                    is_depth: Some(
+                        false,
+                    ),
+                    is_array: false,
+                    is_multisampled: false,
+                },
+            ),
+            nbind: 1,
+        },
+        Descriptor {
+            name: Some(
+                "nearest2D",
+            ),
+            desc_bind: (set=7, bind=2),
+            desc_ty: Sampler,
+            ty: Sampler(
+                SamplerType,
+            ),
+            nbind: 1,
+        },
+        PushConstant {
+            name: None,
+            ty: Struct(
+                StructType {
+                    name: Some(
+                        "pcBuf",
+                    ),
+                    members: [
+                        StructMember {
+                            name: Some(
+                                "view",
+                            ),
+                            offset: Some(
+                                0,
+                            ),
+                            ty: Matrix(
+                                MatrixType {
+                                    vector_ty: VectorType {
+                                        scalar_ty: Float {
+                                            bits: 32,
+                                        },
+                                        nscalar: 4,
+                                    },
+                                    nvector: 4,
+                                    axis_order: Some(
+                                        RowMajor,
+                                    ),
+                                    stride: Some(
+                                        16,
+                                    ),
+                                },
+                            ),
+                            access_ty: ReadWrite,
+                        },
+                    ],
+                },
+            ),
+        },
+        Input {
+            name: Some(
+                "attr.world_pos",
+            ),
+            location: (loc=0, comp=0),
+            ty: Vector(
+                VectorType {
+                    scalar_ty: Float {
+                        bits: 32,
+                    },
+                    nscalar: 3,
+                },
+            ),
+        },
+        Input {
+            name: Some(
+                "attr.norm",
+            ),
+            location: (loc=1, comp=0),
+            ty: Vector(
+                VectorType {
+                    scalar_ty: Float {
+                        bits: 32,
+                    },
+                    nscalar: 3,
+                },
+            ),
+        },
+        Input {
+            name: Some(
+                "attr.uv",
+            ),
+            location: (loc=2, comp=0),
+            ty: Vector(
+                VectorType {
+                    scalar_ty: Float {
+                        bits: 32,
+                    },
+                    nscalar: 2,
+                },
+            ),
+        },
+        Input {
+            name: Some(
+                "attr.color",
+            ),
+            location: (loc=3, comp=0),
+            ty: Vector(
+                VectorType {
+                    scalar_ty: Float {
+                        bits: 32,
+                    },
+                    nscalar: 4,
+                },
+            ),
+        },
+        Output {
+            name: Some(
+                "@entryPointOutput.color",
+            ),
+            location: (loc=0, comp=0),
+            ty: Vector(
+                VectorType {
+                    scalar_ty: Float {
+                        bits: 32,
+                    },
+                    nscalar: 4,
+                },
+            ),
+        },
+    ],
+    exec_modes: [],
 }
-fragment shader:
+glsl fragment shader:
 main {
-    push_const: None,
-    inputs: {
-        (loc=1, comp=0): vec2<f32>,
-    },
-    outputs: {
-        (loc=0, comp=0): vec4<f32>,
-    },
-    descriptors: {
-        (set=0, bind=0): 1x sampler2D<f32>,
-        (set=0, bind=1): 1x sampler2D<f32>,
-    },
-    spec_consts: {
-        233: f32,
-    },
+    exec_model: Fragment,
+    name: "main",
+    vars: [
+        Output {
+            name: Some(
+                "color",
+            ),
+            location: (loc=0, comp=0),
+            ty: Vector(
+                VectorType {
+                    scalar_ty: Float {
+                        bits: 32,
+                    },
+                    nscalar: 4,
+                },
+            ),
+        },
+        Descriptor {
+            name: Some(
+                "limap",
+            ),
+            desc_bind: (set=0, bind=0),
+            desc_ty: CombinedImageSampler,
+            ty: CombinedImageSampler(
+                CombinedImageSamplerType {
+                    sampled_image_ty: SampledImageType {
+                        scalar_ty: Float {
+                            bits: 32,
+                        },
+                        dim: Dim2D,
+                        is_depth: Some(
+                            false,
+                        ),
+                        is_array: false,
+                        is_multisampled: false,
+                    },
+                },
+            ),
+            nbind: 1,
+        },
+        Input {
+            name: Some(
+                "uv",
+            ),
+            location: (loc=1, comp=0),
+            ty: Vector(
+                VectorType {
+                    scalar_ty: Float {
+                        bits: 32,
+                    },
+                    nscalar: 2,
+                },
+            ),
+        },
+        Descriptor {
+            name: Some(
+                "emit_map",
+            ),
+            desc_bind: (set=0, bind=1),
+            desc_ty: CombinedImageSampler,
+            ty: CombinedImageSampler(
+                CombinedImageSamplerType {
+                    sampled_image_ty: SampledImageType {
+                        scalar_ty: Float {
+                            bits: 32,
+                        },
+                        dim: Dim2D,
+                        is_depth: Some(
+                            false,
+                        ),
+                        is_array: false,
+                        is_multisampled: false,
+                    },
+                },
+            ),
+            nbind: 1,
+        },
+        SpecConstant {
+            name: Some(
+                "hack_scale",
+            ),
+            spec_id: 233,
+            ty: Scalar(
+                Float {
+                    bits: 32,
+                },
+            ),
+        },
+    ],
+    exec_modes: [
+        ExecutionMode {
+            exec_mode: OriginUpperLeft,
+            operands: [],
+        },
+    ],
 }
-wgsl shader:
-fs_main {
-    push_const: None,
-    inputs: {
-        (loc=0, comp=0): vec2<f32>,
-    },
-    outputs: {
-        (loc=0, comp=0): vec4<f32>,
-    },
-    descriptors: {
-        (set=0, bind=1): 1x texture2D<u32>,
-    },
-    spec_consts: {},
-}
-hello shader:
-vs_main {
-    push_const: None,
-    inputs: {},
-    outputs: {},
-    descriptors: {},
-    spec_consts: {},
+spirv compute shader:
+main {
+    exec_model: GLCompute,
+    name: "main",
+    vars: [
+        Descriptor {
+            name: Some(
+                "b",
+            ),
+            desc_bind: (set=0, bind=1),
+            desc_ty: StorageBuffer(
+                WriteOnly,
+            ),
+            ty: Struct(
+                StructType {
+                    name: Some(
+                        "_1",
+                    ),
+                    members: [
+                        StructMember {
+                            name: Some(
+                                "o",
+                            ),
+                            offset: Some(
+                                0,
+                            ),
+                            ty: Vector(
+                                VectorType {
+                                    scalar_ty: Float {
+                                        bits: 32,
+                                    },
+                                    nscalar: 4,
+                                },
+                            ),
+                            access_ty: WriteOnly,
+                        },
+                    ],
+                },
+            ),
+            nbind: 1,
+        },
+        Descriptor {
+            name: Some(
+                "u",
+            ),
+            desc_bind: (set=0, bind=0),
+            desc_ty: UniformBuffer,
+            ty: Struct(
+                StructType {
+                    name: Some(
+                        "_0",
+                    ),
+                    members: [
+                        StructMember {
+                            name: Some(
+                                "i",
+                            ),
+                            offset: Some(
+                                0,
+                            ),
+                            ty: Vector(
+                                VectorType {
+                                    scalar_ty: Float {
+                                        bits: 32,
+                                    },
+                                    nscalar: 4,
+                                },
+                            ),
+                            access_ty: ReadWrite,
+                        },
+                    ],
+                },
+            ),
+            nbind: 1,
+        },
+    ],
+    exec_modes: [
+        ExecutionMode {
+            exec_mode: LocalSize,
+            operands: [
+                Constant {
+                    name: None,
+                    ty: Scalar(
+                        Integer {
+                            bits: 32,
+                            is_signed: false,
+                        },
+                    ),
+                    value: U32(
+                        1,
+                    ),
+                    spec_id: None,
+                },
+                Constant {
+                    name: None,
+                    ty: Scalar(
+                        Integer {
+                            bits: 32,
+                            is_signed: false,
+                        },
+                    ),
+                    value: U32(
+                        1,
+                    ),
+                    spec_id: None,
+                },
+                Constant {
+                    name: None,
+                    ty: Scalar(
+                        Integer {
+                            bits: 32,
+                            is_signed: false,
+                        },
+                    ),
+                    value: U32(
+                        1,
+                    ),
+                    spec_id: None,
+                },
+            ],
+        },
+    ],
 }
 sounds good

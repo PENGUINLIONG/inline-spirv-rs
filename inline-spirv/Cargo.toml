@@ -22,10 +22,11 @@ hlsl = ["shaderc"]
 glsl = ["shaderc"]
 
 [dependencies]
+spirq-spvasm = "0.1"
 shaderc = { version = ">=0.7.2, <=0.8", optional = true }
-naga = { version = "0.5.0", features = ["wgsl-in", "spv-out"], optional = true }
-syn = "1.0.38"
-quote = "1.0.7"
+naga = { version = "0.19.0", features = ["wgsl-in", "spv-out"], optional = true }
+syn = "2.0"
+quote = "1.0"
 
 [dev-dependencies]
-spirq = "0.4.13"
+spirq = "1.1.1"
