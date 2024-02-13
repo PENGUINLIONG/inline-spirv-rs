@@ -1,5 +1,5 @@
 use spirq_spvasm::{asm::Assembler, SpirvHeader};
-use crate::{CompilationFeedback, ShaderCompilationConfig};
+use crate::{CompilationFeedback, InputSourceLanguage, ShaderCompilationConfig};
 
 const SPIRV_VERSION_1_0: u32 = 0x0001_0000;
 const SPIRV_VERSION_1_1: u32 = 0x0001_0100;
@@ -17,7 +17,9 @@ pub(crate) fn compile(
     path: Option<&str>,
     cfg: &ShaderCompilationConfig,
 ) -> Result<CompilationFeedback, String> {
-    let mut asm = Assembler::new();
+    if cfg.lang != InputSourceLanguage::Spvasm {
+        return Err("unsupported source language".to_owned());
+    }
 
     let header = match cfg.spv_ver {
         crate::TargetSpirvVersion::Spirv1_0 => SpirvHeader::new(SPIRV_VERSION_1_0, GENERATOR),
@@ -29,7 +31,7 @@ pub(crate) fn compile(
         crate::TargetSpirvVersion::Spirv1_6 => SpirvHeader::new(SPIRV_VERSION_1_6, GENERATOR),
     };
 
-    asm.assemble(src, header)
+    Assembler::new().assemble(src, header)
         .map_err(|e| format!("failed to assemble SPIR-V: {}", e))
         .map(|binary| CompilationFeedback {
             spv: binary.into_words(),
