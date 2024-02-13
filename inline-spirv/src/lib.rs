@@ -8,6 +8,7 @@
 //!
 //! `inline-spirv` currently support three source languages:
 //!
+//! - `spvasm`: The shader source is in [SPIR-V assembly](https://github.com/KhronosGroup/SPIRV-Tools/blob/main/docs/syntax.md) (always there);
 //! - `glsl`: The shader source is in GLSL (enabled by default);
 //! - `hlsl`: The shader source is in HLSL (enabled by default);
 //! - `wgsl`: The shader source is in WGSL.
@@ -155,47 +156,42 @@ use std::path::{Path, PathBuf};
 
 mod backends;
 
-#[cfg(not(any(feature = "shaderc", feature = "naga")))]
-compile_error!("no compiler backend enabled; please specify at least one of \
-    the following input source features: `glsl`, `hlsl`, `wgsl`");
-
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::parse::{Parse, ParseStream, Result as ParseResult, Error as ParseError};
 use syn::{parse_macro_input, Ident, LitStr, Token};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum InputSourceLanguage {
     Unknown,
     Glsl,
     Hlsl,
     Wgsl,
+    Spvasm,
 }
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum TargetSpirvVersion {
     Spirv1_0,
-    #[allow(dead_code)]
     Spirv1_1,
-    #[allow(dead_code)]
     Spirv1_2,
     Spirv1_3,
-    #[allow(dead_code)]
     Spirv1_4,
     Spirv1_5,
+    Spirv1_6,
 }
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum TargetEnvironmentType {
     Vulkan,
     OpenGL,
     WebGpu,
 }
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum OptimizationLevel {
     MinSize,
     MaxPerformance,
     None,
 }
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum ShaderKind {
     Unknown,
 
@@ -294,6 +290,7 @@ fn parse_compile_cfg(
                 cfg.optim_lv = OptimizationLevel::MaxPerformance;
             },
             "wgsl" => cfg.lang = InputSourceLanguage::Wgsl,
+            "spvasm" => cfg.lang = InputSourceLanguage::Spvasm,
 
             "vert" => cfg.kind = ShaderKind::Vertex,
             "tesc" => cfg.kind = ShaderKind::TesselationControl,
@@ -353,6 +350,14 @@ fn parse_compile_cfg(
                 cfg.spv_ver = TargetSpirvVersion::Spirv1_0;
             }
 
+            "spirq1_0" => cfg.spv_ver = TargetSpirvVersion::Spirv1_0,
+            "spirq1_1" => cfg.spv_ver = TargetSpirvVersion::Spirv1_1,
+            "spirq1_2" => cfg.spv_ver = TargetSpirvVersion::Spirv1_2,
+            "spirq1_3" => cfg.spv_ver = TargetSpirvVersion::Spirv1_3,
+            "spirq1_4" => cfg.spv_ver = TargetSpirvVersion::Spirv1_4,
+            "spirq1_5" => cfg.spv_ver = TargetSpirvVersion::Spirv1_5,
+            "spirq1_6" => cfg.spv_ver = TargetSpirvVersion::Spirv1_6,
+
             "auto_bind" => cfg.auto_bind = true,
 
             #[cfg(feature = "naga")]
@@ -369,8 +374,24 @@ fn compile(
     path: Option<&str>,
     cfg: &ShaderCompilationConfig,
 ) -> Result<CompilationFeedback, String> {
-    backends::naga::compile(src, path, cfg)
-        .or_else(|_| backends::shaderc::compile(src, path, cfg))
+    match backends::spirq_spvasm::compile(src, path, cfg) {
+        Ok(x) => return Ok(x),
+        Err(e) if e != "unsupported source language" => return Err(e),
+        _ => {}
+    }
+    #[cfg(feature = "shaderc")]
+    match backends::shaderc::compile(src, path, cfg) {
+        Ok(x) => return Ok(x),
+        Err(e) if e != "unsupported source language" => return Err(e),
+        _ => {}
+    }
+    #[cfg(feature = "naga")]
+    match backends::naga::compile(src, path, cfg) {
+        Ok(x) => return Ok(x),
+        Err(e) if e != "unsupported source language" => return Err(e),
+        _ => {}
+    }
+    Err("no supported backend found".to_owned())
 }
 
 fn build_spirv_binary(path: &Path) -> Option<Vec<u32>> {
