@@ -1,5 +1,5 @@
 use inline_spirv::{inline_spirv, include_spirv as include_spirv_raw};
-use spirq::{SpirvBinary};
+use spirq::prelude::*;
 
 // Notice how you can make a more customized version of include macro, same for
 // the inline macro.
@@ -61,16 +61,16 @@ fn main() {
     "#, wgsl);
 
     #[cfg(feature = "shaderc")]
-    println!("hlsl vertex shader:\n{:#?}", vert.iter().copied().collect::<SpirvBinary>().reflect_vec().unwrap()[0]);
+    println!("hlsl vertex shader:\n{:#?}", ReflectConfig::new().spv(vert).reflect().unwrap()[0]);
     #[cfg(feature = "shaderc")]
-    println!("glsl fragment shader:\n{:#?}", frag.iter().copied().collect::<SpirvBinary>().reflect_vec().unwrap()[0]);
+    println!("glsl fragment shader:\n{:#?}", ReflectConfig::new().spv(frag).reflect().unwrap()[0]);
     #[cfg(feature = "shaderc")]
-    println!("spirv compute shader:\n{:#?}", comp.iter().copied().collect::<SpirvBinary>().reflect_vec().unwrap()[0]);
+    println!("spirv compute shader:\n{:#?}", ReflectConfig::new().spv(comp).reflect().unwrap()[0]);
 
     #[cfg(feature = "naga")]
-    println!("wgsl shader:\n{:#?}", wgsl_shader.iter().copied().collect::<SpirvBinary>().reflect_vec().unwrap()[0]);
+    println!("wgsl shader:\n{:#?}", ReflectConfig::new().spv(wgsl_shader).reflect_vec().unwrap()[0]);
     #[cfg(feature = "naga")]
-    println!("hello shader:\n{:#?}", hello_triangle.iter().copied().collect::<SpirvBinary>().reflect_vec().unwrap()[0]);
+    println!("hello shader:\n{:#?}", ReflectConfig::new().spv(hello_triangle).reflect_vec().unwrap()[0]);
 
     println!("sounds good");
 }
