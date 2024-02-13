@@ -1,6 +1,6 @@
 [package]
 name = "inline-spirv"
-version = "0.1.6"
+version = "0.2.0"
 authors = ["PENGUINLIONG <admin@penguinliong.moe>", "Daniel Parnell <me@danielparnell.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
