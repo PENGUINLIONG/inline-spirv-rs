@@ -1,4 +1,4 @@
-use spirq_spvasm::{asm::Assembler, SpirvHeader};
+use spq_spvasm::{asm::Assembler, SpirvHeader};
 use crate::{CompilationFeedback, InputSourceLanguage, ShaderCompilationConfig};
 
 const SPIRV_VERSION_1_0: u32 = 0x0001_0000;
