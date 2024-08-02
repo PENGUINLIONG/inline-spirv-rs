@@ -26,6 +26,8 @@ use inline_spirv::include_spirv;
 let spv: &'static [u32] = include_spirv!("assets/vert.hlsl", vert, hlsl, entry="Main");
 ```
 
+> Note: File paths consumed by `inline-spirv` are relative to the crate, i.e., the container directory of the project `Cargo.toml`.
+
 To compile a runtime shader source just-in-time:
 
 ```rust
