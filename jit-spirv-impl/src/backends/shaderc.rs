@@ -105,7 +105,7 @@ pub(crate) fn generate_compile_code(
     let generated_code = quote!({
         (|_: String| -> ::std::result::Result<::jit_spirv::CompilationFeedback, String> {
             let mut opt = ::jit_spirv::dep::shaderc::CompileOptions::new()
-                .ok_or("cannot create `shaderc::CompileOptions`")?;
+                .map_err(|_| "cannot create `shaderc::CompileOptions`")?;
             opt.set_target_env(#target_env, #vulkan_version as u32);
             opt.set_source_language(#lang);
             opt.set_auto_bind_uniforms(#auto_bind);
